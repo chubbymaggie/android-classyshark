@@ -1,0 +1,66 @@
+group 'classyshark'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'java-library-distribution' // task: gradle distZip
+
+sourceCompatibility = 1.7
+
+repositories {
+    flatDir {
+        dirs '../third_party'
+    }
+    mavenCentral()
+}
+
+// ClassyShark doesn't follow the standard src/main/java convention
+// https://docs.gradle.org/current/userguide/java_plugin.html#sec:changing_java_project_layout
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/']
+        }
+        resources {
+            srcDirs = ['src/']
+        }
+    }
+}
+
+dependencies {
+    // local jars
+    compile name: 'asmdex-1.0', ext: 'jar'
+    compile name: 'util-2.0.6', ext: 'jar'
+    compile name: 'java-binutils', ext: 'jar'
+
+    // maven
+    compile 'org.ow2.asm:asm-all:5.0.4'
+    compile group: 'org.smali', name: 'dexlib2', version: '2.2.4'
+    compile 'org.apache.bcel:bcel:6.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.3.0'
+    compile 'com.google.code.gson:gson-parent:2.8.1'
+    compile 'com.google.guava:guava:22.0'
+    compile 'com.squareup.okhttp3:okhttp:3.8.1'
+    compile 'com.squareup.okio:okio:1.13.0'
+    compile 'com.squareup.retrofit2:retrofit:2.3.0'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.google.classyshark.Main',
+                "Class-Path": configurations.compile.collect { "lib/$it.name"  }.join(' ')
+        )
+    }
+}
+
+// Create a single Jar with all dependencies
+task fatJar(type: Jar) {
+    manifest {
+        attributes (
+                'Main-Class': 'com.google.classyshark.Main',
+        )
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
